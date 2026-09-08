@@ -10,7 +10,6 @@ on the private Compose network.
 
 | Variable | Required | Default |
 | --- | --- | --- |
-| `GF_SECURITY_ADMIN_PASSWORD` | yes | none |
 | `OBSERVABILITY_DATA_ROOT` | no | `/volume1/docker/observability` |
 | `GRAFANA_VERSION` | no | `latest` |
 | `PROMETHEUS_VERSION` | no | `latest` |
@@ -20,10 +19,14 @@ on the private Compose network.
 | `NODE_EXPORTER_VERSION` | no | `latest` |
 | `CADVISOR_VERSION` | no | `latest` |
 
+Grafana's one-time bootstrap password is generated on the NAS at
+`/volume1/docker/observability/secrets/grafana_admin_password` and mounted with
+Grafana's `__FILE` configuration. Change the interactive admin password in
+Grafana after first login; never place it in Portainer stack variables.
+
 Create a Synology reverse-proxy rule from
 `https://grafana.ambitiouscake.com` to `http://127.0.0.1:13000`. Enable WebSocket
 headers on that rule.
 
 Logs are retained for seven days. Metrics are retained for 30 days and capped
 at 5 GB. Those limits are intentional because Alexandria has limited capacity.
-

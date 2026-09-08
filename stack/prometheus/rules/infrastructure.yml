@@ -1,0 +1,38 @@
+groups:
+  - name: home-infrastructure
+    rules:
+      - alert: ScrapeTargetDown
+        expr: up == 0
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus target {{ $labels.job }} is down"
+          description: "{{ $labels.instance }} has not been scrapeable for three minutes."
+
+      - alert: AlexandriaVolumeCritical
+        expr: 100 * (1 - node_filesystem_avail_bytes{mountpoint="/volume1"} / node_filesystem_size_bytes{mountpoint="/volume1"}) > 95
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Alexandria volume usage is critical"
+          description: "/volume1 has remained above 95 percent usage for ten minutes."
+
+      - alert: AlexandriaMemoryHigh
+        expr: 100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 90
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alexandria memory usage is high"
+          description: "Available-memory based utilisation has remained above 90 percent for fifteen minutes."
+
+      - alert: AlexandriaCpuHigh
+        expr: 100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 90
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alexandria CPU usage is high"
+          description: "Average CPU utilisation has remained above 90 percent for fifteen minutes."
