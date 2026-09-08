@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     depends_on:
       storage-init:
-        condition: service_completed_successfully
+        condition: service_healthy
       prometheus:
         condition: service_healthy
       loki:
@@ -42,7 +42,10 @@ services:
   storage-init:
     image: alpine:${ALPINE_VERSION:-3.22}
     container_name: observability-storage-init
-    restart: "no"
+    # Compose retains completed one-shot containers in Portainer. Keep this
+    # lightweight sentinel healthy after idempotent storage preparation so the
+    # stack has an accurate all-green lifecycle state.
+    restart: unless-stopped
     command:
       - sh
       - -ec
@@ -60,8 +63,16 @@ services:
         fi
         touch /data/observability/secrets/notifiarr_passthrough_key
         chmod 0600 /data/observability/secrets/notifiarr_passthrough_key
+        touch /tmp/storage-ready
+        exec tail -f /dev/null
     volumes:
       - /volume1/docker:/data
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/storage-ready"]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 5s
     logging: *local-logging
 
   prometheus:
@@ -70,7 +81,7 @@ services:
     restart: unless-stopped
     depends_on:
       storage-init:
-        condition: service_completed_successfully
+        condition: service_healthy
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
@@ -94,7 +105,7 @@ services:
     restart: unless-stopped
     depends_on:
       storage-init:
-        condition: service_completed_successfully
+        condition: service_healthy
       alert-relay:
         condition: service_healthy
     command:
@@ -116,7 +127,7 @@ services:
     restart: unless-stopped
     depends_on:
       storage-init:
-        condition: service_completed_successfully
+        condition: service_healthy
     command: ["python", "/app/relay.py"]
     environment:
       TZ: Australia/Sydney
@@ -138,7 +149,7 @@ services:
     restart: unless-stopped
     depends_on:
       storage-init:
-        condition: service_completed_successfully
+        condition: service_healthy
     command: -config.file=/etc/loki/config.yml
     volumes:
       - ./loki/config.yml:/etc/loki/config.yml:ro
@@ -160,7 +171,7 @@ services:
     user: root
     depends_on:
       storage-init:
-        condition: service_completed_successfully
+        condition: service_healthy
       loki:
         condition: service_healthy
     volumes:
