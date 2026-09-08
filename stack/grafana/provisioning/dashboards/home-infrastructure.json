@@ -53,7 +53,8 @@
       "id": 5,
       "options": {"legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"hideZeros": false, "mode": "multi", "sort": "desc"}},
       "targets": [{"expr": "sum by (id) (rate(container_cpu_usage_seconds_total{id=~\"/docker/.+\"}[5m])) * 100", "legendFormat": "{{id}}", "refId": "A"}],
-      "title": "Container CPU",
+      "transformations": [{"id": "renameByRegex", "options": {"regex": "/docker/([a-f0-9]{12}).*", "renamePattern": "$1"}}],
+      "title": "Container CPU (short ID)",
       "type": "timeseries"
     },
     {
@@ -63,7 +64,8 @@
       "id": 6,
       "options": {"legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"hideZeros": false, "mode": "multi", "sort": "desc"}},
       "targets": [{"expr": "max by (id) (container_memory_working_set_bytes{id=~\"/docker/.+\"})", "legendFormat": "{{id}}", "refId": "A"}],
-      "title": "Container memory",
+      "transformations": [{"id": "renameByRegex", "options": {"regex": "/docker/([a-f0-9]{12}).*", "renamePattern": "$1"}}],
+      "title": "Container memory (short ID)",
       "type": "timeseries"
     },
     {
@@ -86,5 +88,5 @@
   "timezone": "browser",
   "title": "Home Infrastructure Overview",
   "uid": "home-infrastructure",
-  "version": 2
+  "version": 3
 }
