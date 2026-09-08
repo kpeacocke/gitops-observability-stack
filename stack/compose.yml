@@ -6,6 +6,8 @@ services:
     container_name: grafana
     restart: unless-stopped
     depends_on:
+      storage-init:
+        condition: service_completed_successfully
       prometheus:
         condition: service_healthy
       loki:
@@ -36,10 +38,31 @@ services:
         max-size: 10m
         max-file: "3"
 
+  storage-init:
+    image: alpine:${ALPINE_VERSION:-3.22}
+    container_name: observability-storage-init
+    restart: "no"
+    command:
+      - sh
+      - -ec
+      - |
+        install -d -m 0750 /data/observability
+        install -d -m 0750 -o 472 -g 0 /data/observability/grafana
+        install -d -m 0750 -o 65534 -g 65534 /data/observability/prometheus
+        install -d -m 0750 -o 65534 -g 65534 /data/observability/alertmanager
+        install -d -m 0750 -o 10001 -g 10001 /data/observability/loki
+        install -d -m 0750 /data/observability/alloy
+    volumes:
+      - /volume1/docker:/data
+    logging: *local-logging
+
   prometheus:
     image: prom/prometheus:${PROMETHEUS_VERSION:-latest}
     container_name: prometheus
     restart: unless-stopped
+    depends_on:
+      storage-init:
+        condition: service_completed_successfully
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
@@ -60,6 +83,9 @@ services:
     image: prom/alertmanager:${ALERTMANAGER_VERSION:-latest}
     container_name: alertmanager
     restart: unless-stopped
+    depends_on:
+      storage-init:
+        condition: service_completed_successfully
     command:
       - --config.file=/etc/alertmanager/alertmanager.yml
       - --storage.path=/alertmanager
@@ -77,6 +103,9 @@ services:
     image: grafana/loki:${LOKI_VERSION:-latest}
     container_name: loki
     restart: unless-stopped
+    depends_on:
+      storage-init:
+        condition: service_completed_successfully
     command: -config.file=/etc/loki/config.yml
     volumes:
       - ./loki/config.yml:/etc/loki/config.yml:ro
@@ -95,6 +124,8 @@ services:
     command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
     user: root
     depends_on:
+      storage-init:
+        condition: service_completed_successfully
       loki:
         condition: service_healthy
     volumes:
@@ -132,4 +163,3 @@ services:
 networks:
   default:
     name: observability
-
