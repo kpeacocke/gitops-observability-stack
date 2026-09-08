@@ -42,11 +42,12 @@ def notification(payload: dict) -> dict:
     if extra:
         description += f"\n\nPlus {extra} related alert(s) in this group."
     firing = status == "firing"
+    event_id = payload.get("groupKey") or title
     return {
         "notification": {
             "update": True,
-            "name": payload.get("groupKey") or title,
-            "event": "Firing" if firing else "Resolved",
+            "name": "Prometheus Alertmanager",
+            "event": event_id,
         },
         "discord": {
             "color": "dc3545" if firing else "28a745",
