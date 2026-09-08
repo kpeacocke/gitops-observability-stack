@@ -111,10 +111,12 @@ services:
       - ./loki/config.yml:/etc/loki/config.yml:ro
       - ${OBSERVABILITY_DATA_ROOT:-/volume1/docker/observability}/loki:/loki
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3100/ready >/dev/null || exit 1"]
+      # The official Loki image is distroless: it has neither /bin/sh nor wget.
+      # Invoke the shipped binary directly so Docker can validate the process.
+      test: ["CMD", "/usr/bin/loki", "-version"]
       interval: 30s
       timeout: 5s
-      retries: 10
+      retries: 5
     logging: *local-logging
 
   alloy:
