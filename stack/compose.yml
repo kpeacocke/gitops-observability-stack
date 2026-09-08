@@ -157,7 +157,9 @@ services:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
       - /sys:/sys:ro
-      - /var/lib/docker:/var/lib/docker:ro
+      # Synology Container Manager stores Docker state under the volume's
+      # package directory rather than the conventional /var/lib/docker path.
+      - ${DOCKER_DATA_ROOT:-/volume1/@docker}:/var/lib/docker:ro
     logging: *local-logging
 
 networks:
