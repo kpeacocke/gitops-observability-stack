@@ -124,7 +124,7 @@ services:
       NOTIFIARR_KEY_FILE: /run/secrets/notifiarr_passthrough_key
     volumes:
       - ./alert-relay/relay.py:/app/relay.py:ro
-      - ${OBSERVABILITY_DATA_ROOT:-/volume1/docker/observability}/secrets/notifiarr_passthrough_key:/run/secrets/notifiarr_passthrough_key
+      - ${OBSERVABILITY_DATA_ROOT:-/volume1/docker/observability}/secrets/notifiarr_passthrough_key:/run/secrets/notifiarr_passthrough_key:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
       interval: 30s

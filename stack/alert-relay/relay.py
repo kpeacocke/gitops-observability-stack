@@ -49,7 +49,7 @@ def notification(payload: dict) -> dict:
             "event": "Firing" if firing else "Resolved",
         },
         "discord": {
-            "color": "#dc3545" if firing else "#28a745",
+            "color": "dc3545" if firing else "28a745",
             "ping": {"pingUser": 0, "pingRole": 0},
             "images": {"thumbnail": "", "image": ""},
             "text": {
