@@ -113,8 +113,6 @@ services:
     depends_on:
       storage-init:
         condition: service_completed_successfully
-      loki-purge-once:
-        condition: service_completed_successfully
     command: -config.file=/etc/loki/config.yml
     volumes:
       - ./loki/config.yml:/etc/loki/config.yml:ro
@@ -126,20 +124,6 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
-    logging: *local-logging
-
-  # One-deployment security cleanup. Remove this service immediately after the
-  # successful purge so historical logs cannot be deleted a second time.
-  loki-purge-once:
-    image: alpine:${ALPINE_VERSION:-3.22}
-    container_name: loki-purge-once
-    restart: "no"
-    command:
-      - sh
-      - -ec
-      - find /loki -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-    volumes:
-      - ${OBSERVABILITY_DATA_ROOT:-/volume1/docker/observability}/loki:/loki
     logging: *local-logging
 
   alloy:
