@@ -178,6 +178,12 @@ services:
       - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${OBSERVABILITY_DATA_ROOT:-/volume1/docker/observability}/alloy:/var/lib/alloy
+    healthcheck:
+      test: ["CMD", "/bin/alloy", "--version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     logging: *local-logging
 
   node-exporter:
@@ -190,6 +196,12 @@ services:
     pid: host
     volumes:
       - /:/host:ro
+    healthcheck:
+      test: ["CMD", "/bin/node_exporter", "--version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     logging: *local-logging
 
   cadvisor:
