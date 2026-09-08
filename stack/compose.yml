@@ -1,0 +1,135 @@
+name: observability
+
+services:
+  grafana:
+    image: grafana/grafana:${GRAFANA_VERSION:-latest}
+    container_name: grafana
+    restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+    environment:
+      TZ: Australia/Sydney
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:?set in Portainer}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SERVER_ROOT_URL: https://grafana.ambitiouscake.com
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_LOG_MODE: console
+    ports:
+      - "13000:3000"
+    volumes:
+      - ${OBSERVABILITY_DATA_ROOT:-/volume1/docker/observability}/grafana:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    logging: &local-logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_VERSION:-latest}
+    container_name: prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --storage.tsdb.retention.size=5GB
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ${OBSERVABILITY_DATA_ROOT:-/volume1/docker/observability}/prometheus:/prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9090/-/healthy >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    logging: *local-logging
+
+  alertmanager:
+    image: prom/alertmanager:${ALERTMANAGER_VERSION:-latest}
+    container_name: alertmanager
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ${OBSERVABILITY_DATA_ROOT:-/volume1/docker/observability}/alertmanager:/alertmanager
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9093/-/healthy >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    logging: *local-logging
+
+  loki:
+    image: grafana/loki:${LOKI_VERSION:-latest}
+    container_name: loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/config.yml
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - ${OBSERVABILITY_DATA_ROOT:-/volume1/docker/observability}/loki:/loki
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3100/ready >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+    logging: *local-logging
+
+  alloy:
+    image: grafana/alloy:${ALLOY_VERSION:-latest}
+    container_name: alloy
+    restart: unless-stopped
+    command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
+    user: root
+    depends_on:
+      loki:
+        condition: service_healthy
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${OBSERVABILITY_DATA_ROOT:-/volume1/docker/observability}/alloy:/var/lib/alloy
+    logging: *local-logging
+
+  node-exporter:
+    image: prom/node-exporter:${NODE_EXPORTER_VERSION:-latest}
+    container_name: node-exporter
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|volume1/@.+)($$|/)
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    logging: *local-logging
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION:-latest}
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+    logging: *local-logging
+
+networks:
+  default:
+    name: observability
+
