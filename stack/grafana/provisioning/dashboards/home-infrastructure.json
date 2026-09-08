@@ -52,7 +52,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 5},
       "id": 5,
       "options": {"legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"hideZeros": false, "mode": "multi", "sort": "desc"}},
-      "targets": [{"expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name!=\"\"}[5m])) * 100", "legendFormat": "{{name}}", "refId": "A"}],
+      "targets": [{"expr": "sum by (id) (rate(container_cpu_usage_seconds_total{id=~\"/docker/.+\"}[5m])) * 100", "legendFormat": "{{id}}", "refId": "A"}],
       "title": "Container CPU",
       "type": "timeseries"
     },
@@ -62,7 +62,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 5},
       "id": 6,
       "options": {"legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"hideZeros": false, "mode": "multi", "sort": "desc"}},
-      "targets": [{"expr": "container_memory_working_set_bytes{name!=\"\"}", "legendFormat": "{{name}}", "refId": "A"}],
+      "targets": [{"expr": "max by (id) (container_memory_working_set_bytes{id=~\"/docker/.+\"})", "legendFormat": "{{id}}", "refId": "A"}],
       "title": "Container memory",
       "type": "timeseries"
     },
