@@ -58,6 +58,8 @@ services:
           umask 077
           head -c 48 /dev/urandom | base64 > /data/observability/secrets/grafana_admin_password
         fi
+        touch /data/observability/secrets/notifiarr_passthrough_key
+        chmod 0600 /data/observability/secrets/notifiarr_passthrough_key
     volumes:
       - /volume1/docker:/data
     logging: *local-logging
@@ -93,6 +95,8 @@ services:
     depends_on:
       storage-init:
         condition: service_completed_successfully
+      alert-relay:
+        condition: service_healthy
     command:
       - --config.file=/etc/alertmanager/alertmanager.yml
       - --storage.path=/alertmanager
@@ -101,6 +105,28 @@ services:
       - ${OBSERVABILITY_DATA_ROOT:-/volume1/docker/observability}/alertmanager:/alertmanager
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9093/-/healthy >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    logging: *local-logging
+
+  alert-relay:
+    image: python:${PYTHON_VERSION:-3.13-alpine}
+    container_name: alert-relay
+    restart: unless-stopped
+    depends_on:
+      storage-init:
+        condition: service_completed_successfully
+    command: ["python", "/app/relay.py"]
+    environment:
+      TZ: Australia/Sydney
+      NOTIFIARR_CHANNEL_ID: ${NOTIFIARR_CHANNEL_ID:-1545951260908195940}
+      NOTIFIARR_KEY_FILE: /run/secrets/notifiarr_passthrough_key
+    volumes:
+      - ./alert-relay/relay.py:/app/relay.py:ro
+      - ${OBSERVABILITY_DATA_ROOT:-/volume1/docker/observability}/secrets/notifiarr_passthrough_key:/run/secrets/notifiarr_passthrough_key:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
       interval: 30s
       timeout: 5s
       retries: 5
