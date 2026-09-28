@@ -37,6 +37,13 @@ Alertmanager receives alerts when the reflector scrape fails, Avahi browsing
 fails, a required VLAN interface disappears, or a reflected VLAN reports zero
 mDNS services for an extended period.
 
+After a GitOps configuration update, verify the live target and dashboard, not
+only Portainer's commit badge. Existing containers can retain old bind-mounted
+files when the Git checkout replaces them without changing Compose. If the live
+configuration is stale, restart the affected service through Portainer and
+verify its health again. For this dashboard, interface value `1` is green and
+value `0` is red; zero discovered services is a separate observation.
+
 ## Portainer variables
 
 | Variable | Required | Default |

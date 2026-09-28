@@ -156,10 +156,23 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "continuous-GrYlRd"
+            "mode": "thresholds"
           },
           "min": 0,
-          "max": 1
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
         },
         "overrides": []
       },
@@ -342,5 +355,5 @@
   "timezone": "browser",
   "title": "Home Discovery",
   "uid": "home-discovery",
-  "version": 1
+  "version": 2
 }
