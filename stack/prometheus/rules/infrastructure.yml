@@ -36,3 +36,35 @@ groups:
         annotations:
           summary: "Alexandria CPU usage is high"
           description: "Average CPU utilisation has remained above 90 percent for fifteen minutes."
+
+  - name: mdns-discovery
+    rules:
+      - alert: MDNSBrowseFailed
+        expr: mdns_browse_success{job="pi-mdns"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: mdns
+        annotations:
+          summary: "pi-mdns cannot browse mDNS services"
+          description: "The reflector exporter has failed its Avahi browse for more than two minutes."
+
+      - alert: MDNSInterfaceDown
+        expr: mdns_interface_up{job="pi-mdns"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: mdns
+        annotations:
+          summary: "Expected pi-mdns VLAN interface is down"
+          description: "{{ $labels.interface }} (VLAN {{ $labels.vlan }}, {{ $labels.role }}) is missing or down."
+
+      - alert: MDNSVLANDiscoveryEmpty
+        expr: mdns_services_total{job="pi-mdns"} == 0
+        for: 15m
+        labels:
+          severity: warning
+          service: mdns
+        annotations:
+          summary: "No mDNS services visible on a reflected VLAN"
+          description: "{{ $labels.interface }} ({{ $labels.role }}) has reported zero mDNS services for fifteen minutes."
