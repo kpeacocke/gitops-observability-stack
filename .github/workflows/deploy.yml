@@ -7,10 +7,15 @@ name: Validate and deploy
     paths:
       - "stack/**"
       - ".github/workflows/deploy.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "stack/**"
+      - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
 concurrency:
-  group: deploy-observability
+  group: deploy-observability-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -18,10 +23,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+
       - name: Validate Compose
         run: docker compose -f stack/compose.yml config --quiet
 
+      - name: Validate Prometheus configuration and rules
+        run: |
+          docker run --rm \
+            -v "$PWD/stack/prometheus:/etc/prometheus:ro" \
+            --entrypoint /bin/promtool \
+            prom/prometheus:latest \
+            check config /etc/prometheus/prometheus.yml
+
+      - name: Validate Alertmanager configuration
+        run: |
+          docker run --rm \
+            -v "$PWD/stack/alertmanager:/etc/alertmanager:ro" \
+            --entrypoint /bin/amtool \
+            prom/alertmanager:latest \
+            check-config /etc/alertmanager/alertmanager.yml
+
+      - name: Validate Grafana dashboard JSON
+        run: |
+          for dashboard in stack/grafana/provisioning/dashboards/*.json; do
+            python3 -m json.tool "$dashboard" >/dev/null
+          done
+
   deploy:
+    if: github.event_name != 'pull_request'
     needs: validate
     runs-on: ubuntu-latest
     steps:
