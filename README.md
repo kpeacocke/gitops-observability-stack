@@ -6,6 +6,37 @@ infrastructure. Deploy through Portainer from `stack/compose.yml`.
 Only Grafana is published. Prometheus, Loki, Alertmanager and collectors remain
 on the private Compose network.
 
+## mDNS discovery observability
+
+The production `pi-mdns` reflector exposes low-cardinality Prometheus metrics
+on `192.168.5.101:9105`. Prometheus scrapes that endpoint directly on the
+management network.
+
+The **Home Discovery** Grafana dashboard reports:
+
+- whether Prometheus can scrape the reflector
+- whether Avahi can browse successfully
+- whether VLAN interfaces 1-4 are up
+- the number of mDNS services visible on each reflected VLAN
+- discovered DNS-SD service types by VLAN
+- common household classes such as AirPlay, RAOP, printers, HomeKit, Cast and SMB
+
+The reflector intentionally exports service counts and service types only. It
+does not put discovered device/service instance names into Prometheus.
+
+Expected reflection policy:
+
+| VLAN | Interface | Role |
+| ---: | --- | --- |
+| 1 | `eth0.1` | Trusted |
+| 2 | `eth0.2` | Kids |
+| 3 | `eth0.3` | Media / consoles / TVs |
+| 4 | `eth0.4` | IoT |
+
+Alertmanager receives alerts when the reflector scrape fails, Avahi browsing
+fails, a required VLAN interface disappears, or a reflected VLAN reports zero
+mDNS services for an extended period.
+
 ## Portainer variables
 
 | Variable | Required | Default |
